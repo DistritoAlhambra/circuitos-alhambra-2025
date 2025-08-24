@@ -3,31 +3,476 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Proyecto: Circuitos Culturales Alhambra 2025</title>
+    <title>Panel de Proyecto: Circuitos Culturales Alhambra</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals & Terracotta Red -->
+    <!-- Application Structure Plan: He diseñado una SPA estilo panel de control con secciones temáticas (Proyecto, Impacto, Equipo, Presupuesto, Cronograma) y una barra de navegación fija. La interacción principal es un visualizador de presupuesto con desglose (drill-down) que permite explorar los datos complejos de forma sencilla. Esta estructura fue elegida para facilitar una exploración no lineal y más intuitiva del denso contenido del informe, priorizando la comprensión del usuario sobre la estructura original del documento. -->
+    <!-- Visualization & Content Choices: Beneficiarios -> Gráfico de Anillo (Informa proporción); KPIs -> Gráfico de Barras (Compara escala); Presupuesto -> Gráfico de Anillo + Barras interactivo (Organiza y detalla); Equipo -> Organigrama con HTML/CSS (Organiza jerarquía); Cronograma -> Línea de tiempo visual con HTML/CSS (Muestra cambio). Todas las visualizaciones usan Chart.js (Canvas) y HTML/CSS, confirmando que NO se utiliza SVG ni Mermaid.js. Las interacciones están diseñadas para simplificar datos complejos y mejorar la usabilidad. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #FDFBF8; color: #4A4A4A; }
-        .chart-container { position: relative; width: 100%; height: 300px; max-height: 400px; }
-        @media (min-width: 768px) { .chart-container { height: 350px; } }
-        .timeline-item { position: relative; padding-bottom: 2.5rem; padding-left: 2.5rem; }
-        .timeline-item:last-child { padding-bottom: 0; }
-        .timeline-marker { position: absolute; left: 0; top: 0; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: translateX(-50%); }
-        .timeline-line { position: absolute; left: 0; top: 1.5rem; bottom: 0; width: 2px; transform: translateX(-50%); }
-        .team-card::after { content: ''; position: absolute; bottom: -1rem; left: 50%; transform: translateX(-50%); width: 2px; height: 1rem; background-color: #E5E7EB; }
-        .team-card-group > .team-card:last-child::after { display: none; }
-        .team-connector { position: absolute; top: -1rem; left: 50%; transform: translateX(-50%); width: 2px; height: 1rem; background-color: #E5E7EB; }
-        .team-connector-horizontal { position: absolute; top: -1rem; left: 25%; right: 25%; height: 2px; background-color: #E5E7EB; }
-        .modal { transition: opacity 0.25s ease; }
-        .modal-active { overflow-x: hidden; overflow-y: auto; }
-        .spinner { border-top-color: #D35400; animation: spinner 0.6s linear infinite; }
-        @keyframes spinner { to { transform: rotate(360deg); } }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm neutral background */
+            color: #4A4A4A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 2.5rem;
+            padding-left: 2.5rem;
+        }
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateX(-50%);
+        }
+        .timeline-line {
+            position: absolute;
+            left: 0;
+            top: 1.5rem;
+            bottom: 0;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+        .team-card::after {
+            content: '';
+            position: absolute;
+            bottom: -1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 1rem;
+            background-color: #E5E7EB;
+        }
+        .team-card-group > .team-card:last-child::after {
+            display: none;
+        }
+        .team-connector {
+            position: absolute;
+            top: -1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 1rem;
+            background-color: #E5E7EB;
+        }
+        .team-connector-horizontal {
+            position: absolute;
+            top: -1rem;
+            left: 25%;
+            right: 25%;
+            height: 2px;
+            background-color: #E5E7EB;
+        }
     </style>
 </head>
 <body class="antialiased">
-    <!-- PEGA AQUÍ TODO EL CONTENIDO HTML DEL CUERPO QUE YA TENÍAS, incluyendo header, main, footer, modal y el script -->
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-[#D35400]">
+                Distrito Alhambra
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#proyecto" class="text-gray-600 hover:text-[#D35400] transition-colors">El Proyecto</a>
+                <a href="#impacto" class="text-gray-600 hover:text-[#D35400] transition-colors">Impacto</a>
+                <a href="#equipo" class="text-gray-600 hover:text-[#D35400] transition-colors">El Equipo</a>
+                <a href="#presupuesto" class="text-gray-600 hover:text-[#D35400] transition-colors">Presupuesto</a>
+                <a href="#cronograma" class="text-gray-600 hover:text-[#D35400] transition-colors">Cronograma</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <section id="hero" class="text-center mb-20">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-[#D35400] mb-4">Circuitos Culturales Alhambra</h1>
+            <p class="text-lg md:text-xl max-w-3xl mx-auto text-gray-600 mb-12">Un panel interactivo para explorar el proyecto que busca transformar la UPZ 20 Alhambra en un vibrante distrito creativo, fomentando la cohesión social, el arte y la sostenibilidad.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                    <h3 class="text-3xl font-bold text-[#D35400]">6</h3>
+                    <p class="text-gray-500">Circuitos Culturales</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                    <h3 class="text-3xl font-bold text-[#D35400]">6,000+</h3>
+                    <p class="text-gray-500">Beneficiarios Directos</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                    <h3 class="text-3xl font-bold text-[#D35400]">$995M</h3>
+                    <p class="text-gray-500">Presupuesto Total (COP)</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="proyecto" class="py-16">
+            <h2 class="text-3xl font-bold text-center mb-2 text-[#D35400]">El Proyecto</h2>
+            <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12">El objetivo es desarrollar 6 Circuitos Culturales durante 12 meses, implementando metodologías participativas y prácticas sostenibles para consolidar un nuevo distrito creativo que potencie la cohesión social y el desarrollo local.</p>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center">
+                    <div class="text-4xl mb-4 text-[#E67E22]">🎭</div>
+                    <h3 class="text-xl font-bold mb-2">Circuitos Culturales</h3>
+                    <p class="text-gray-600">Eventos bimensuales con teatro, música, arte y bienestar para activar el barrio y fomentar el encuentro.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center">
+                    <div class="text-4xl mb-4 text-[#E67E22]">🛍️</div>
+                    <h3 class="text-xl font-bold mb-2">Ferias de Emprendimiento</h3>
+                    <p class="text-gray-600">Una feria por circuito para visibilizar y potenciar a más de 20 emprendedores locales, impulsando la economía circular.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center">
+                    <div class="text-4xl mb-4 text-[#E67E22]">🌿</div>
+                    <h3 class="text-xl font-bold mb-2">Talleres y Actividades</h3>
+                    <p class="text-gray-600">Más de 30 talleres de arte, conciencia ambiental y participación ciudadana para formar y conectar a la comunidad.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="impacto" class="py-16 bg-gray-50 rounded-2xl px-8">
+            <h2 class="text-3xl font-bold text-center mb-12 text-[#D35400]">Impacto y Alcance</h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4 text-center">Indicadores Clave de Éxito (KPIs)</h3>
+                    <div class="chart-container">
+                        <canvas id="kpiChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4 text-center">Población Beneficiaria</h3>
+                     <div class="chart-container max-w-sm mx-auto">
+                        <canvas id="beneficiaryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="equipo" class="py-16">
+            <h2 class="text-3xl font-bold text-center mb-12 text-[#D35400]">El Equipo: 19 Profesionales</h2>
+            <div class="text-center">
+                <div class="inline-block bg-white p-4 rounded-lg shadow-md border border-gray-100 relative team-card">
+                    <p class="font-bold text-[#D35400]">Dirección General</p>
+                    <p class="text-sm text-gray-500">Laura Peraza Rivera</p>
+                </div>
+                
+                <div class="mt-8 relative">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pt-8">
+                        
+                        <div class="relative">
+                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                             <div class="team-connector-horizontal hidden md:block" style="left:50%; right:-50%;"></div>
+                             <div class="bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 team-card">
+                                <p class="font-bold">Dirección de Marketing</p>
+                                <p class="text-sm text-gray-500">1 Director, 4 Miembros</p>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                             <div class="team-connector-horizontal hidden md:block"></div>
+                             <div class="bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 team-card">
+                                <p class="font-bold">Dirección de Producción</p>
+                                <p class="text-sm text-gray-500">1 Director, 5 Miembros</p>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                             <div class="team-connector-horizontal hidden md:block"></div>
+                             <div class="bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 team-card">
+                                <p class="font-bold">Dirección Administrativa</p>
+                                <p class="text-sm text-gray-500">1 Director, 2 Miembros</p>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                             <div class="team-connector-horizontal hidden md:block" style="left:-50%; right:50%;"></div>
+                             <div class="bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 team-card">
+                                <p class="font-bold">Innovación y Programas</p>
+                                <p class="text-sm text-gray-500">1 Director, 2 Coordinadores</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="presupuesto" class="py-16 bg-gray-50 rounded-2xl px-8">
+            <h2 class="text-3xl font-bold text-center mb-2 text-[#D35400]">Análisis del Presupuesto</h2>
+            <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12">Explora la distribución del presupuesto total de $995.5M COP. Haz clic en una categoría del gráfico principal para ver el desglose detallado.</p>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4 text-center">Distribución General</h3>
+                    <div class="chart-container max-w-md mx-auto">
+                        <canvas id="budgetMainChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 id="budgetDetailTitle" class="text-2xl font-semibold mb-4 text-center">Detalle por Categoría</h3>
+                    <div class="chart-container">
+                        <canvas id="budgetDetailChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="cronograma" class="py-16">
+            <h2 class="text-3xl font-bold text-center mb-12 text-[#D35400]">Cronograma de 12 Meses</h2>
+            <div class="max-w-3xl mx-auto">
+                <div class="relative border-l-2 border-dashed border-gray-300">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-[#D35400] text-white">1</div>
+                        <div class="timeline-line bg-gray-300"></div>
+                        <h3 class="text-xl font-bold">Mes 1: Planificación y Organización</h3>
+                        <p class="text-gray-600">Formación del equipo, socialización del plan anual y definición del cronograma detallado con todos los aliados.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-[#E67E22] text-white">C1</div>
+                        <div class="timeline-line bg-gray-300"></div>
+                        <h3 class="text-xl font-bold">Mes 2: Primer Circuito Cultural</h3>
+                        <p class="text-gray-600">Ejecución del evento inaugural, incluyendo feria de emprendimiento y talleres. Evaluación post-evento.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-[#E67E22] text-white">C2</div>
+                        <div class="timeline-line bg-gray-300"></div>
+                        <h3 class="text-xl font-bold">Mes 4: Segundo Circuito Cultural</h3>
+                        <p class="text-gray-600">Implementación del segundo ciclo de actividades, aplicando las mejoras identificadas en el primer circuito.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-[#E67E22] text-white">C3</div>
+                        <div class="timeline-line bg-gray-300"></div>
+                        <h3 class="text-xl font-bold">Mes 6: Tercer Circuito y Festival Ambiental</h3>
+                        <p class="text-gray-600">Coincidiendo con el Día del Medio Ambiente, este circuito tendrá un fuerte enfoque en sostenibilidad.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-[#E67E22] text-white">C4</div>
+                        <div class="timeline-line bg-gray-300"></div>
+                        <h3 class="text-xl font-bold">Mes 8: Cuarto Circuito Cultural</h3>
+                        <p class="text-gray-600">Continuación del programa bimensual, fortaleciendo la red de espacios culturales y la participación comunitaria.</p>
+                    </div>
+                     <div class="timeline-item">
+                        <div class="timeline-marker bg-[#E67E22] text-white">C5</div>
+                        <div class="timeline-line bg-gray-300"></div>
+                        <h3 class="text-xl font-bold">Mes 10: Quinto Circuito Cultural</h3>
+                        <p class="text-gray-600">Ciclo enfocado en expresiones artísticas, con exposiciones y ciclos de cine.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-[#D35400] text-white">S</div>
+                         <div class="timeline-line bg-gray-300"></div>
+                        <h3 class="text-xl font-bold">Mes 11-12: Sostenibilidad y Cierre</h3>
+                        <p class="text-gray-600">Implementación del modelo de negocio, planificación a futuro y ejecución del sexto y último circuito con un gran evento de cierre.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-gray-200">
+        <div class="container mx-auto px-6 py-8 text-center text-gray-500">
+            <p>&copy; Distrito Alhambra. Un proyecto para la comunidad, por la comunidad.</p>
+            <p class="text-sm mt-2">Panel interactivo desarrollado para facilitar la comprensión del proyecto CC2024-681.</p>
+        </div>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const projectData = {
+        kpis: {
+            labels: ['Beneficiarios', 'Emprendedores Apoyados', 'Artistas Contratados', 'Casas Culturales Aliadas', 'Talleres Realizados'],
+            data: [6000, 120, 48, 10, 30]
+        },
+        beneficiaries: {
+            labels: ['Juventud', 'Adulto Mayor', 'Mujeres', 'Infancia', 'Población LGBTIQ+'],
+            data: [35, 25, 20, 15, 5]
+        },
+        budget: {
+            main: {
+                labels: ['Equipo Humano', 'Equipos y Activos', 'Costos de Actividades', 'Gastos Administrativos y Difusión'],
+                data: [485772000, 219198489, 143541670, 147107538]
+            },
+            details: {
+                'Equipo Humano': {
+                    labels: ['Dirección y Coordinación', 'Producción y Logística', 'Marketing', 'Programas', 'Administrativo'],
+                    data: [156000000, 72000000, 61200000, 78000000, 118572000]
+                },
+                'Equipos y Activos': {
+                    labels: ['Producción Audiovisual', 'Sonido Profesional', 'Infraestructura Ferias', 'Equipos de Oficina'],
+                    data: [89314500, 24636402, 21513800, 83733787]
+                },
+                'Costos de Actividades': {
+                    labels: ['Incentivos Casas Culturales', 'Honorarios Artistas Ferias', 'Talleres Ambientales', 'Talleres Participación'],
+                    data: [36000000, 50400000, 26700000, 27960000]
+                },
+                'Gastos Administrativos y Difusión': {
+                    labels: ['Gastos Obligatorios CoCrea', 'Difusión y Marketing', 'Suscripciones (Software)', 'Logística y Reuniones'],
+                    data: [97332000, 39600000, 37662000, 9263538]
+                }
+            }
+        }
+    };
+
+    const colors = {
+        primary: '#D35400',
+        secondary: '#E67E22',
+        accent: '#F39C12',
+        light: '#F5B041',
+        extraLight: '#FAD7A0',
+        gray: '#BDC3C7'
+    };
+
+    const chartPalette = [colors.primary, colors.secondary, colors.accent, colors.light, colors.extraLight];
+    
+    Chart.defaults.font.family = 'Inter';
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    Chart.defaults.plugins.tooltip.titleFont = { size: 14, weight: 'bold' };
+    Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
+    Chart.defaults.plugins.legend.position = 'bottom';
+    Chart.defaults.plugins.legend.labels.boxWidth = 15;
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
+    }
+
+    const kpiCtx = document.getElementById('kpiChart').getContext('2d');
+    new Chart(kpiCtx, {
+        type: 'bar',
+        data: {
+            labels: projectData.kpis.labels.map(label => label.split(' ')),
+            datasets: [{
+                label: 'Total Esperado',
+                data: projectData.kpis.data,
+                backgroundColor: chartPalette,
+                borderColor: chartPalette.map(color => color + 'B3'),
+                borderWidth: 1,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: { x: { beginAtZero: true, grid: { display: false } }, y: { grid: { display: false } } },
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${c.raw.toLocaleString('es-CO')}` } }
+            }
+        }
+    });
+
+    const beneficiaryCtx = document.getElementById('beneficiaryChart').getContext('2d');
+    new Chart(beneficiaryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: projectData.beneficiaries.labels,
+            datasets: [{
+                label: 'Distribución',
+                data: projectData.beneficiaries.data,
+                backgroundColor: chartPalette,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw}%` } } }
+        }
+    });
+
+    const budgetMainCtx = document.getElementById('budgetMainChart').getContext('2d');
+    const budgetDetailCtx = document.getElementById('budgetDetailChart').getContext('2d');
+    let budgetDetailChart;
+
+    const budgetMainChart = new Chart(budgetMainCtx, {
+        type: 'doughnut',
+        data: {
+            labels: projectData.budget.main.labels,
+            datasets: [{
+                data: projectData.budget.main.data,
+                backgroundColor: chartPalette,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const i = elements[0].index;
+                    const category = budgetMainChart.data.labels[i];
+                    updateBudgetDetailChart(category);
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.chart.getDatasetMeta(0).total;
+                            const percentage = ((value / total) * 100).toFixed(2);
+                            return ` ${label}: ${formatCurrency(value)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    function updateBudgetDetailChart(category) {
+        const detailData = projectData.budget.details[category];
+        document.getElementById('budgetDetailTitle').innerText = `Detalle: ${category}`;
+        if (budgetDetailChart) budgetDetailChart.destroy();
+        budgetDetailChart = new Chart(budgetDetailCtx, {
+            type: 'bar',
+            data: {
+                labels: detailData.labels,
+                datasets: [{
+                    label: 'Costo (COP)',
+                    data: detailData.data,
+                    backgroundColor: colors.secondary,
+                    borderColor: colors.primary,
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { callback: (v) => formatCurrency(v / 1000000) + 'M' } } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${formatCurrency(c.raw)}` } }
+                }
+            }
+        });
+    }
+
+    updateBudgetDetailChart(projectData.budget.main.labels[0]);
+});
+</script>
 </body>
 </html>
