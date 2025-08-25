@@ -10,14 +10,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals & Terracotta Red -->
-    <!-- Application Structure Plan: He diseñado una SPA estilo panel de control con secciones temáticas (Proyecto, Impacto, Equipo, Presupuesto, Cronograma) y una barra de navegación fija. La interacción principal es un visualizador de presupuesto con desglose (drill-down) que permite explorar los datos complejos de forma sencilla. Esta estructura fue elegida para facilitar una exploración no lineal y más intuitiva del denso contenido del informe, priorizando la comprensión del usuario sobre la estructura original del documento. -->
-    <!-- Visualization & Content Choices: Beneficiarios -> Gráfico de Anillo (Informa proporción); KPIs -> Gráfico de Barras (Compara escala); Presupuesto -> Gráfico de Anillo + Barras interactivo (Organiza y detalla); Equipo -> Organigrama con HTML/CSS (Organiza jerarquía); Cronograma -> Línea de tiempo visual con HTML/CSS (Muestra cambio). Todas las visualizaciones usan Chart.js (Canvas) y HTML/CSS, confirmando que NO se utiliza SVG ni Mermaid.js. Las interacciones están diseñadas para simplificar datos complejos y mejorar la usabilidad. -->
+    <!-- Application Structure Plan: He diseñado una SPA estilo panel de control con secciones temáticas (Proyecto, Impacto, Presupuesto, Inversión, Equipo, Cronograma, Trayectoria, Aliados) y una barra de navegación fija. La interacción principal es un visualizador de presupuesto con desglose (drill-down) y una calculadora de incentivos. La sección de aliados es ahora un carrusel infinito y se ha añadido una nueva sección de trayectoria interactiva. Esta estructura fue elegida para facilitar una exploración no lineal y más intuitiva del denso contenido del informe, priorizando la comprensión del usuario sobre la estructura original del documento. -->
+    <!-- Visualization & Content Choices: Beneficiarios -> Gráfico de Anillo (Informa proporción); KPIs -> Gráfico de Barras (Compara escala); Presupuesto -> Gráfico de Anillo + Barras interactivo (Organiza y detalla); Equipo -> Organigrama con HTML/CSS (Organiza jerarquía); Cronograma y Trayectoria -> Líneas de tiempo visuales con HTML/CSS (Muestra cambio). Todas las visualizaciones usan Chart.js (Canvas) y HTML/CSS, confirmando que NO se utiliza SVG ni Mermaid.js. Las interacciones están diseñadas para simplificar datos complejos y mejorar la usabilidad. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #FDFBF8; /* Warm neutral background */
             color: #4A4A4A;
+            cursor: default;
         }
         .chart-container {
             position: relative;
@@ -32,8 +33,8 @@
         }
         .timeline-item {
             position: relative;
-            padding-bottom: 2.5rem;
-            padding-left: 2.5rem;
+            padding-bottom: 3rem;
+            padding-left: 3rem;
         }
         .timeline-item:last-child {
             padding-bottom: 0;
@@ -42,18 +43,19 @@
             position: absolute;
             left: 0;
             top: 0;
-            width: 1.5rem;
-            height: 1.5rem;
+            width: 2rem;
+            height: 2rem;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             transform: translateX(-50%);
+            font-size: 0.8rem;
         }
         .timeline-line {
             position: absolute;
             left: 0;
-            top: 1.5rem;
+            top: 2rem;
             bottom: 0;
             width: 2px;
             transform: translateX(-50%);
@@ -88,79 +90,192 @@
             height: 2px;
             background-color: #E5E7EB;
         }
+        .stat-card-description {
+            transition: all 0.3s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+        }
+        .stat-card-description.open {
+            max-height: 200px; /* Adjust as needed */
+            margin-top: 1rem;
+        }
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .team-roles {
+            transition: all 0.3s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+        }
+        .team-roles.open {
+            max-height: 500px; /* Adjust as needed */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .stat-arrow {
+            transition: transform 0.3s ease-in-out;
+        }
+        .open .stat-arrow {
+            transform: rotate(180deg);
+        }
+        .carousel-track {
+            transition: transform 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body class="antialiased">
 
     <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="text-2xl font-bold text-[#D35400]">
-                Distrito Alhambra
+        <nav class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="pl-2">
+                 <img src="https://i.postimg.cc/7hpJJ91W/Recurso-1.png" alt="Logo Distrito Alhambra" class="h-12 w-auto">
             </div>
-            <div class="hidden md:flex space-x-8">
-                <a href="#proyecto" class="text-gray-600 hover:text-[#D35400] transition-colors">El Proyecto</a>
-                <a href="#impacto" class="text-gray-600 hover:text-[#D35400] transition-colors">Impacto</a>
-                <a href="#equipo" class="text-gray-600 hover:text-[#D35400] transition-colors">El Equipo</a>
-                <a href="#presupuesto" class="text-gray-600 hover:text-[#D35400] transition-colors">Presupuesto</a>
-                <a href="#cronograma" class="text-gray-600 hover:text-[#D35400] transition-colors">Cronograma</a>
+            
+            <div class="hidden md:flex space-x-2">
+                <a href="#proyecto" class="bg-[#D35400] text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[#E67E22] transition-colors whitespace-nowrap">El Proyecto</a>
+                <a href="#impacto" class="bg-[#D35400] text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[#E67E22] transition-colors whitespace-nowrap">Impacto</a>
+                <a href="#presupuesto" class="bg-[#D35400] text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[#E67E22] transition-colors whitespace-nowrap">Presupuesto</a>
+                <a href="#inversion" class="bg-[#D35400] text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[#E67E22] transition-colors whitespace-nowrap">Inversión</a>
+                <a href="#equipo" class="bg-[#D35400] text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[#E67E22] transition-colors whitespace-nowrap">El Equipo</a>
+                <a href="#cronograma" class="bg-[#D35400] text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[#E67E22] transition-colors whitespace-nowrap">Cronograma</a>
+                <a href="#trayectoria" class="bg-[#D35400] text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[#E67E22] transition-colors whitespace-nowrap">Trayectoria</a>
+                <a href="#aliados" class="bg-[#D35400] text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[#E67E22] transition-colors whitespace-nowrap">Aliados</a>
+            </div>
+            <div class="md:hidden">
+                <button id="menu-btn" class="text-gray-600 hover:text-[#D35400]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
             </div>
         </nav>
     </header>
 
+    <div id="mobile-menu" class="fixed inset-y-0 left-0 w-64 bg-white shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out z-50">
+        <div class="p-4">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-xl font-bold text-[#D35400]">Menú</h2>
+                <button id="close-menu-btn" class="text-gray-600 hover:text-[#D35400]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <nav class="flex flex-col space-y-4">
+                <a href="#proyecto" class="text-gray-700 hover:text-[#D35400] py-2">El Proyecto</a>
+                <a href="#impacto" class="text-gray-700 hover:text-[#D35400] py-2">Impacto</a>
+                <a href="#presupuesto" class="text-gray-700 hover:text-[#D35400] py-2">Presupuesto</a>
+                <a href="#inversion" class="text-gray-700 hover:text-[#D35400] py-2">Inversión</a>
+                <a href="#equipo" class="text-gray-700 hover:text-[#D35400] py-2">El Equipo</a>
+                <a href="#cronograma" class="text-gray-700 hover:text-[#D35400] py-2">Cronograma</a>
+                <a href="#trayectoria" class="text-gray-700 hover:text-[#D35400] py-2">Trayectoria</a>
+                <a href="#aliados" class="text-gray-700 hover:text-[#D35400] py-2">Aliados</a>
+            </nav>
+        </div>
+    </div>
+    <div id="menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
+
+
     <main class="container mx-auto px-6 py-12">
 
-        <section id="hero" class="text-center mb-20">
+        <section id="hero" class="text-center mb-12">
             <h1 class="text-4xl md:text-6xl font-extrabold text-[#D35400] mb-4">Circuitos Culturales Alhambra</h1>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
             <p class="text-lg md:text-xl max-w-3xl mx-auto text-gray-600 mb-12">Un panel interactivo para explorar el proyecto que busca transformar la UPZ 20 Alhambra en un vibrante distrito creativo, fomentando la cohesión social, el arte y la sostenibilidad.</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                    <h3 class="text-3xl font-bold text-[#D35400]">6</h3>
-                    <p class="text-gray-500">Circuitos Culturales</p>
+                <div class="stat-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 cursor-pointer flex flex-col">
+                    <div class="flex-grow">
+                        <h3 class="text-3xl font-bold text-[#D35400]">6</h3>
+                        <p class="text-gray-500 text-base font-medium h-12">Circuitos Culturales</p>
+                    </div>
+                    <div class="mt-2 flex justify-center">
+                        <div class="w-8 h-8 bg-[#D35400] rounded-full flex items-center justify-center text-white flex-shrink-0">
+                            <svg class="w-4 h-4 stat-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                    <div class="stat-card-description text-sm text-left text-gray-600">
+                        Se realizarán 6 grandes eventos bimensuales a lo largo de 12 meses, cada uno con una temática única que integra arte, cultura y comunidad.
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                    <h3 class="text-3xl font-bold text-[#D35400]">6,000+</h3>
-                    <p class="text-gray-500">Beneficiarios Directos</p>
+                <div class="stat-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 cursor-pointer flex flex-col">
+                    <div class="flex-grow">
+                        <h3 class="text-3xl font-bold text-[#D35400]">6,000+</h3>
+                        <p class="text-gray-500 text-base font-medium h-12">Beneficiarios Directos</p>
+                    </div>
+                    <div class="mt-2 flex justify-center">
+                        <div class="w-8 h-8 bg-[#D35400] rounded-full flex items-center justify-center text-white flex-shrink-0">
+                            <svg class="w-4 h-4 stat-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                     <div class="stat-card-description text-sm text-left text-gray-600">
+                        Es el público objetivo del territorio. Se espera impactar a más de 6,000 residentes de la UPZ Alhambra, incluyendo jóvenes, adultos mayores, mujeres y niños.
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                    <h3 class="text-3xl font-bold text-[#D35400]">$995M</h3>
-                    <p class="text-gray-500">Presupuesto Total (COP)</p>
+                <div class="stat-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 cursor-pointer flex flex-col">
+                    <div class="flex-grow">
+                        <h3 class="text-3xl font-bold text-[#D35400]">$995M</h3>
+                        <p class="text-gray-500 text-base font-medium h-12">Presupuesto Total (COP)</p>
+                    </div>
+                    <div class="mt-2 flex justify-center">
+                        <div class="w-8 h-8 bg-[#D35400] rounded-full flex items-center justify-center text-white flex-shrink-0">
+                            <svg class="w-4 h-4 stat-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                     <div class="stat-card-description text-sm text-left text-gray-600">
+                        Es la inversión total requerida para la ejecución del proyecto durante 12 meses, cubriendo equipo humano, activos, actividades y gastos administrativos.
+                    </div>
                 </div>
             </div>
         </section>
 
         <section id="proyecto" class="py-16">
-            <h2 class="text-3xl font-bold text-center mb-2 text-[#D35400]">El Proyecto</h2>
+            <h2 class="text-3xl font-bold text-center mb-2 text-[#D35400]">Los Pilares del Proyecto</h2>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
             <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12">El objetivo es desarrollar 6 Circuitos Culturales durante 12 meses, implementando metodologías participativas y prácticas sostenibles para consolidar un nuevo distrito creativo que potencie la cohesión social y el desarrollo local.</p>
             <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center">
-                    <div class="text-4xl mb-4 text-[#E67E22]">🎭</div>
-                    <h3 class="text-xl font-bold mb-2">Circuitos Culturales</h3>
-                    <p class="text-gray-600">Eventos bimensuales con teatro, música, arte y bienestar para activar el barrio y fomentar el encuentro.</p>
+                <div class="project-card bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all" 
+                    data-title="Circuitos Culturales" 
+                    data-description="Son el corazón del proyecto. Cada dos meses, se activa una red de espacios culturales aliados (galerías, cafés, talleres) con una programación diversa que incluye conciertos, exposiciones de arte, obras de teatro y charlas. El objetivo es sacar la cultura a la calle, facilitar el encuentro entre vecinos y visibilizar la riqueza creativa del barrio, transformando el territorio en un escenario vivo.">
+                    <div>
+                        <div class="text-4xl mb-4 text-[#E67E22]">🎭</div>
+                        <h3 class="text-xl font-bold mb-2">Circuitos Culturales</h3>
+                        <p class="text-gray-600">Eventos bimensuales con teatro, música, arte y bienestar para activar el barrio y fomentar el encuentro.</p>
+                    </div>
+                    <span class="text-[#D35400] mt-4 inline-block underline">Conoce más</span>
                 </div>
-                <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center">
-                    <div class="text-4xl mb-4 text-[#E67E22]">🛍️</div>
-                    <h3 class="text-xl font-bold mb-2">Ferias de Emprendimiento</h3>
-                    <p class="text-gray-600">Una feria por circuito para visibilizar y potenciar a más de 20 emprendedores locales, impulsando la economía circular.</p>
+                <div class="project-card bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all" 
+                    data-title="Ferias de Emprendimiento" 
+                    data-description="Cada circuito cultural va acompañado de una feria que sirve como plataforma para más de 20 emprendedores locales. Estas ferias no solo potencian la economía del barrio, sino que promueven un modelo de consumo circular y sostenible. Son un espacio clave para que los creadores, artesanos y pequeños negocios del sector muestren sus productos, generen ingresos y fortalezcan la identidad económica local.">
+                    <div>
+                        <div class="text-4xl mb-4 text-[#E67E22]">🛍️</div>
+                        <h3 class="text-xl font-bold mb-2">Ferias de Emprendimiento</h3>
+                        <p class="text-gray-600">Una feria por circuito para visibilizar y potenciar a emprendedores locales, impulsando la economía circular.</p>
+                    </div>
+                    <span class="text-[#D35400] mt-4 inline-block underline">Conoce más</span>
                 </div>
-                <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center">
-                    <div class="text-4xl mb-4 text-[#E67E22]">🌿</div>
-                    <h3 class="text-xl font-bold mb-2">Talleres y Actividades</h3>
-                    <p class="text-gray-600">Más de 30 talleres de arte, conciencia ambiental y participación ciudadana para formar y conectar a la comunidad.</p>
+                <div class="project-card bg-white p-8 rounded-xl shadow-lg border border-gray-100 text-center flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all" 
+                    data-title="Talleres y Actividades" 
+                    data-description="Son el componente formativo y de conexión del proyecto. Se realizarán más de 30 talleres gratuitos o de bajo costo enfocados en tres áreas: arte (dibujo, escritura, etc.), conciencia ambiental (compostaje, huertas) y participación ciudadana. El fin es que los vecinos no solo sean espectadores, sino que adquieran nuevas habilidades, compartan sus pasiones y construyan lazos más fuertes a través del aprendizaje conjunto.">
+                    <div>
+                        <div class="text-4xl mb-4 text-[#E67E22]">🌿</div>
+                        <h3 class="text-xl font-bold mb-2">Talleres y Actividades</h3>
+                        <p class="text-gray-600">Más de 30 talleres para formar y conectar a la comunidad a través de sus intereses.</p>
+                    </div>
+                    <span class="text-[#D35400] mt-4 inline-block underline">Conoce más</span>
                 </div>
             </div>
         </section>
 
         <section id="impacto" class="py-16 bg-gray-50 rounded-2xl px-8">
             <h2 class="text-3xl font-bold text-center mb-12 text-[#D35400]">Impacto y Alcance</h2>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                    <h3 class="text-2xl font-semibold mb-4 text-center">Indicadores Clave de Éxito (KPIs)</h3>
+                    <h3 class="text-2xl font-semibold mb-4 text-center">Actores Clave Impactados</h3>
+                    <p class="text-center text-sm text-gray-600 mb-4">El proyecto potenciará directamente a los creadores y gestores del ecosistema cultural local.</p>
                     <div class="chart-container">
                         <canvas id="kpiChart"></canvas>
                     </div>
                 </div>
                 <div>
                     <h3 class="text-2xl font-semibold mb-4 text-center">Población Beneficiaria</h3>
+                    <p class="text-center text-sm text-gray-600 mb-4">El público objetivo que se beneficiará de las actividades generadas por los actores clave.</p>
                      <div class="chart-container max-w-sm mx-auto">
                         <canvas id="beneficiaryChart"></canvas>
                     </div>
@@ -168,60 +283,9 @@
             </div>
         </section>
 
-        <section id="equipo" class="py-16">
-            <h2 class="text-3xl font-bold text-center mb-12 text-[#D35400]">El Equipo: 19 Profesionales</h2>
-            <div class="text-center">
-                <div class="inline-block bg-white p-4 rounded-lg shadow-md border border-gray-100 relative team-card">
-                    <p class="font-bold text-[#D35400]">Dirección General</p>
-                    <p class="text-sm text-gray-500">Laura Peraza Rivera</p>
-                </div>
-                
-                <div class="mt-8 relative">
-                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pt-8">
-                        
-                        <div class="relative">
-                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
-                             <div class="team-connector-horizontal hidden md:block" style="left:50%; right:-50%;"></div>
-                             <div class="bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 team-card">
-                                <p class="font-bold">Dirección de Marketing</p>
-                                <p class="text-sm text-gray-500">1 Director, 4 Miembros</p>
-                            </div>
-                        </div>
-
-                        <div class="relative">
-                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
-                             <div class="team-connector-horizontal hidden md:block"></div>
-                             <div class="bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 team-card">
-                                <p class="font-bold">Dirección de Producción</p>
-                                <p class="text-sm text-gray-500">1 Director, 5 Miembros</p>
-                            </div>
-                        </div>
-
-                        <div class="relative">
-                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
-                             <div class="team-connector-horizontal hidden md:block"></div>
-                             <div class="bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 team-card">
-                                <p class="font-bold">Dirección Administrativa</p>
-                                <p class="text-sm text-gray-500">1 Director, 2 Miembros</p>
-                            </div>
-                        </div>
-
-                        <div class="relative">
-                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
-                             <div class="team-connector-horizontal hidden md:block" style="left:-50%; right:50%;"></div>
-                             <div class="bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 team-card">
-                                <p class="font-bold">Innovación y Programas</p>
-                                <p class="text-sm text-gray-500">1 Director, 2 Coordinadores</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="presupuesto" class="py-16 bg-gray-50 rounded-2xl px-8">
+        <section id="presupuesto" class="py-16">
             <h2 class="text-3xl font-bold text-center mb-2 text-[#D35400]">Análisis del Presupuesto</h2>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
             <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12">Explora la distribución del presupuesto total de $995.5M COP. Haz clic en una categoría del gráfico principal para ver el desglose detallado.</p>
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div>
@@ -239,8 +303,114 @@
             </div>
         </section>
 
-        <section id="cronograma" class="py-16">
+        <section id="inversion" class="py-16 bg-gray-50 rounded-2xl px-8">
+            <h2 class="text-3xl font-bold text-center mb-2 text-[#D35400]">Incentivo a la Inversión</h2>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
+            <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12">Nuestra meta es de $995 millones, pero cada aporte cuenta. Utiliza la calculadora para ver el impacto de tu inversión.</p>
+            <div class="grid md:grid-cols-2 gap-12 items-start">
+                <div class="space-y-8">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-[#D35400]">Beneficio Tributario (Co-Crea)</h3>
+                        <p class="text-gray-600">Por cada peso que su empresa invierte o dona, obtiene un certificado para deducir un <strong class="font-bold">165%</strong> de ese valor de su base gravable de renta. Es una inversión socialmente inteligente que optimiza su carga fiscal.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-[#D35400]">Beneficio Estratégico (ESG)</h3>
+                        <ul class="list-disc list-inside text-gray-600 space-y-2">
+                            <li><strong class="font-semibold">Ambiental:</strong> Fomenta la economía circular y la conciencia ecológica.</li>
+                            <li><strong class="font-semibold">Social:</strong> Fortalece la cohesión comunitaria, la salud mental y el acceso a la cultura.</li>
+                            <li><strong class="font-semibold">Gobernanza:</strong> Se asocia a un proyecto con gestión transparente, validado y con métricas de impacto claras.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+                    <h3 class="text-2xl font-semibold mb-6 text-center">Calculadora Tributaria</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="investment-amount" class="block text-sm font-medium text-gray-700">Introduzca el valor donado o invertido</label>
+                            <input type="number" id="investment-amount" value="100000000" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#D35400] focus:border-[#D35400] sm:text-lg font-bold">
+                        </div>
+                        <div>
+                            <label for="tax-rate" class="block text-sm font-medium text-gray-700">Tasa de tributación</label>
+                            <div class="relative mt-1">
+                                <input type="number" id="tax-rate" value="35" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#D35400] focus:border-[#D35400] sm:text-lg font-bold">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-lg">%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-orange-50 p-3 rounded-lg">
+                            <p class="text-sm text-gray-600">Valor de la deducción (165%)</p>
+                            <p id="deduction-result" class="font-bold text-[#D35400] text-xl"></p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">Ahorro sobre el impuesto de la renta</p>
+                            <p id="savings-result" class="font-bold text-green-600 text-2xl"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="equipo" class="py-16">
+            <h2 class="text-3xl font-bold text-center mb-12 text-[#D35400]">El Equipo: 19 Profesionales</h2>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
+            <div class="text-center">
+                <div class="inline-block bg-white p-4 rounded-lg shadow-md border border-gray-100 relative">
+                    <p class="font-bold text-[#D35400]">Dirección General</p>
+                    <p class="text-sm text-gray-500">Laura Peraza Rivera</p>
+                </div>
+                
+                <div class="mt-8 relative">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pt-8">
+                        
+                        <div class="relative">
+                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                             <div class="team-connector-horizontal hidden md:block" style="left:50%; right:-50%;"></div>
+                             <div class="team-card-interactive bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 cursor-pointer" data-team="marketing">
+                                <p class="font-bold">Dirección de Marketing</p>
+                                <p class="text-sm text-gray-500">1 Director, 4 Miembros</p>
+                             </div>
+                             <div id="marketing-roles" class="team-roles bg-gray-50 rounded-b-lg text-left p-4 text-sm"></div>
+                        </div>
+
+                        <div class="relative">
+                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                             <div class="team-connector-horizontal hidden md:block"></div>
+                             <div class="team-card-interactive bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 cursor-pointer" data-team="production">
+                                <p class="font-bold">Dirección de Producción</p>
+                                <p class="text-sm text-gray-500">1 Director, 5 Miembros</p>
+                             </div>
+                             <div id="production-roles" class="team-roles bg-gray-50 rounded-b-lg text-left p-4 text-sm"></div>
+                        </div>
+
+                        <div class="relative">
+                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                             <div class="team-connector-horizontal hidden md:block"></div>
+                             <div class="team-card-interactive bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 cursor-pointer" data-team="admin">
+                                <p class="font-bold">Dirección Administrativa</p>
+                                <p class="text-sm text-gray-500">1 Director, 2 Miembros</p>
+                             </div>
+                             <div id="admin-roles" class="team-roles bg-gray-50 rounded-b-lg text-left p-4 text-sm"></div>
+                        </div>
+
+                        <div class="relative">
+                             <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-300"></div>
+                             <div class="team-connector-horizontal hidden md:block" style="left:-50%; right:50%;"></div>
+                             <div class="team-card-interactive bg-white p-4 rounded-lg shadow-md border border-gray-100 relative mt-8 cursor-pointer" data-team="innovation">
+                                <p class="font-bold">Innovación y Programas</p>
+                                <p class="text-sm text-gray-500">1 Director, 2 Coordinadores</p>
+                             </div>
+                             <div id="innovation-roles" class="team-roles bg-gray-50 rounded-b-lg text-left p-4 text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="cronograma" class="py-16 bg-gray-50 rounded-2xl px-8">
             <h2 class="text-3xl font-bold text-center mb-12 text-[#D35400]">Cronograma de 12 Meses</h2>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
             <div class="max-w-3xl mx-auto">
                 <div class="relative border-l-2 border-dashed border-gray-300">
                     <div class="timeline-item">
@@ -250,31 +420,31 @@
                         <p class="text-gray-600">Formación del equipo, socialización del plan anual y definición del cronograma detallado con todos los aliados.</p>
                     </div>
                     <div class="timeline-item">
-                        <div class="timeline-marker bg-[#E67E22] text-white">C1</div>
+                        <div class="timeline-marker bg-[#E67E22] text-white font-bold">C1</div>
                         <div class="timeline-line bg-gray-300"></div>
                         <h3 class="text-xl font-bold">Mes 2: Primer Circuito Cultural</h3>
                         <p class="text-gray-600">Ejecución del evento inaugural, incluyendo feria de emprendimiento y talleres. Evaluación post-evento.</p>
                     </div>
                     <div class="timeline-item">
-                        <div class="timeline-marker bg-[#E67E22] text-white">C2</div>
+                        <div class="timeline-marker bg-[#E67E22] text-white font-bold">C2</div>
                         <div class="timeline-line bg-gray-300"></div>
                         <h3 class="text-xl font-bold">Mes 4: Segundo Circuito Cultural</h3>
                         <p class="text-gray-600">Implementación del segundo ciclo de actividades, aplicando las mejoras identificadas en el primer circuito.</p>
                     </div>
                     <div class="timeline-item">
-                        <div class="timeline-marker bg-[#E67E22] text-white">C3</div>
+                        <div class="timeline-marker bg-[#E67E22] text-white font-bold">C3</div>
                         <div class="timeline-line bg-gray-300"></div>
-                        <h3 class="text-xl font-bold">Mes 6: Tercer Circuito y Festival Ambiental</h3>
-                        <p class="text-gray-600">Coincidiendo con el Día del Medio Ambiente, este circuito tendrá un fuerte enfoque en sostenibilidad.</p>
+                        <h3 class="text-xl font-bold">Mes 6: Tercer Circuito Cultural</h3>
+                        <p class="text-gray-600">Este evento continuará la dinámica bimensual, buscando integrar temáticas ambientales relevantes para la comunidad en sus actividades.</p>
                     </div>
                     <div class="timeline-item">
-                        <div class="timeline-marker bg-[#E67E22] text-white">C4</div>
+                        <div class="timeline-marker bg-[#E67E22] text-white font-bold">C4</div>
                         <div class="timeline-line bg-gray-300"></div>
                         <h3 class="text-xl font-bold">Mes 8: Cuarto Circuito Cultural</h3>
-                        <p class="text-gray-600">Continuación del programa bimensual, fortaleciendo la red de espacios culturales y la participación comunitaria.</p>
+                        <p class="text-gray-600">Continuación del programa, fortaleciendo la red de espacios culturales y la participación comunitaria.</p>
                     </div>
                      <div class="timeline-item">
-                        <div class="timeline-marker bg-[#E67E22] text-white">C5</div>
+                        <div class="timeline-marker bg-[#E67E22] text-white font-bold">C5</div>
                         <div class="timeline-line bg-gray-300"></div>
                         <h3 class="text-xl font-bold">Mes 10: Quinto Circuito Cultural</h3>
                         <p class="text-gray-600">Ciclo enfocado en expresiones artísticas, con exposiciones y ciclos de cine.</p>
@@ -289,7 +459,84 @@
             </div>
         </section>
 
+        <section id="trayectoria" class="py-16">
+            <h2 class="text-3xl font-bold text-center mb-2 text-[#D35400]">Nuestra Trayectoria</h2>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
+            <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12">Un camino de colaboración y crecimiento comunitario. Haz clic en cada etapa para conocer más.</p>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="project-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 text-center flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all"
+                    data-title="Origen y Mapeo Inicial (2022)"
+                    data-description="El proyecto nace en colaboración con la casa cultural Alta Frecuencia, gracias a la beca 'Es Cultura Local'. En esta primera fase, se realizó un mapeo colectivo para identificar los activos culturales y sociales del territorio, sentando las bases de la iniciativa.">
+                    <div class="flex-grow">
+                        <div class="text-4xl mb-4 text-[#E67E22]">🗺️</div>
+                        <h3 class="text-lg font-bold mb-2">2022</h3>
+                        <p class="text-gray-600 text-sm">Origen y Mapeo Inicial</p>
+                    </div>
+                    <span class="text-[#D35400] mt-4 inline-block underline text-sm">Conoce más</span>
+                </div>
+                <div class="project-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 text-center flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all"
+                    data-title="Investigación y Cartografía (2023)"
+                    data-description="Durante esta etapa, se profundizó en el levantamiento de información, desarrollando una cartografía detallada del sector y un estudio de mercado. Este análisis fue crucial para entender las dinámicas del barrio y definir las estrategias de intervención del proyecto.">
+                    <div class="flex-grow">
+                        <div class="text-4xl mb-4 text-[#E67E22]">📊</div>
+                        <h3 class="text-lg font-bold mb-2">2023</h3>
+                        <p class="text-gray-600 text-sm">Investigación y Cartografía</p>
+                    </div>
+                    <span class="text-[#D35400] mt-4 inline-block underline text-sm">Conoce más</span>
+                </div>
+                <div class="project-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 text-center flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all"
+                    data-title="Nuevas Alianzas y Becas (2024)"
+                    data-description="Tribu Art Club, ganador de la beca 'Más Cultura Local', destina recursos para forjar alianzas, seleccionando a Distrito Alhambra para la gestión de comunicaciones. Paralelamente, en 2024 ganamos la beca 'Bogotá Camina Segura', consolidando nuestro enfoque en la comunidad.">
+                    <div class="flex-grow">
+                        <div class="text-4xl mb-4 text-[#E67E22]">🤝</div>
+                        <h3 class="text-lg font-bold mb-2">2024</h3>
+                        <p class="text-gray-600 text-sm">Nuevas Alianzas y Becas</p>
+                    </div>
+                    <span class="text-[#D35400] mt-4 inline-block underline text-sm">Conoce más</span>
+                </div>
+                <div class="project-card bg-white p-6 rounded-xl shadow-lg border border-gray-100 text-center flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all"
+                    data-title="Expansión y Alianza Local (2025)"
+                    data-description="Inicia la ejecución de la beca 'Bogotá Camina Segura'. Adicionalmente, a nombre de Laura Peraza, ganamos 'Presupuestos Participativos', asegurando recursos extra y una alianza estratégica con la Alcaldía Local. Actualmente, estamos a la espera de la firma de la resolución para comenzar la ejecución.">
+                    <div class="flex-grow">
+                        <div class="text-4xl mb-4 text-[#E67E22]">🏆</div>
+                        <h3 class="text-lg font-bold mb-2">2025</h3>
+                        <p class="text-gray-600 text-sm">Expansión y Alianza Local</p>
+                    </div>
+                    <span class="text-[#D35400] mt-4 inline-block underline text-sm">Conoce más</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="aliados" class="py-16 bg-gray-50 rounded-2xl px-8 relative overflow-hidden">
+            <h2 class="text-3xl font-bold text-center mb-12 text-[#D35400]">Nuestros Aliados</h2>
+            <div class="w-2/5 mx-auto h-px bg-gray-200 my-8"></div>
+            <div class="relative">
+                <div id="carousel-track" class="flex items-center carousel-track">
+                    <!-- Logos will be injected here by JS -->
+                </div>
+                <button id="prev-btn" class="absolute left-0 top-1/2 -translate-y-1/2 bg-white/50 hover:bg-white rounded-full p-2 shadow-md">
+                    <svg class="w-6 h-6 text-[#D35400]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button id="next-btn" class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/50 hover:bg-white rounded-full p-2 shadow-md">
+                    <svg class="w-6 h-6 text-[#D35400]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+        </section>
+
     </main>
+    
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2">
+        <a href="https://www.instagram.com/distrito_alhambra/" target="_blank" class="bg-gradient-to-br from-purple-600 to-pink-500 text-white p-4 rounded-full shadow-lg hover:from-purple-700 hover:to-pink-600 transition-transform transform hover:scale-110" aria-label="Contactar por Instagram">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.585-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.07-1.645-.07-4.85s.012-3.585.07-4.85c.148-3.227 1.664-4.771 4.919-4.919C8.415 2.175 8.796 2.163 12 2.163zm0 1.802c-3.116 0-3.473.01-4.692.065-2.61.12-3.847 1.35-3.967 3.967-.055 1.22-.065 1.575-.065 4.692s.01 3.473.065 4.692c.12 2.61 1.35 3.847 3.967 3.967 1.22.055 1.575.065 4.692.065s3.473-.01 4.692-.065c2.61-.12 3.847-1.35 3.967-3.967.055-1.22.065-1.575.065-4.692s-.01-3.473-.065-4.692c-.12-2.61-1.35-3.847-3.967-3.967-1.22-.055-1.575-.065-4.692-.065zm0 4.488c-1.933 0-3.5 1.567-3.5 3.5s1.567 3.5 3.5 3.5 3.5-1.567 3.5-3.5-1.567-3.5-3.5-3.5zm0 5.25c-1.033 0-1.868-.835-1.868-1.868s.835-1.868 1.868-1.868 1.868.835 1.868 1.868-.835 1.868-1.868 1.868zm4.965-5.85c-.62 0-1.125.505-1.125 1.125s.505 1.125 1.125 1.125 1.125-.505 1.125-1.125-.505-1.125-1.125-1.125z"/>
+            </svg>
+        </a>
+        <a href="https://wa.me/573196961600" target="_blank" class="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-transform transform hover:scale-110" aria-label="Contactar por WhatsApp">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                <path d="M16.6 14.2c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.6.7-.8.9-.1.1-.3.2-.5.1-.2-.1-.9-.3-1.8-1.1-.7-.6-1.1-1.4-1.3-1.6-.1-.2 0-.4.1-.5.1-.1.2-.2.4-.4.1-.1.2-.2.2-.4.1-.1.1-.3 0-.4-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2 1 2.4c.1.1 1.5 2.3 3.6 3.2.5.2.9.4 1.2.5.5.2 1 .1 1.3.1.4-.1.5-.2.7-.4.2-.2.2-1.2.1-1.3zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18.2c-4.5 0-8.2-3.7-8.2-8.2S7.5 3.8 12 3.8s8.2 3.7 8.2 8.2-3.7 8.2-8.2 8.2z"/>
+            </svg>
+        </a>
+    </div>
 
     <footer class="bg-white border-t border-gray-200">
         <div class="container mx-auto px-6 py-8 text-center text-gray-500">
@@ -297,13 +544,31 @@
             <p class="text-sm mt-2">Panel interactivo desarrollado para facilitar la comprensión del proyecto CC2024-681.</p>
         </div>
     </footer>
+    
+    <div id="project-modal" class="modal fixed w-full h-full top-0 left-0 flex items-center justify-center hidden z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-lg mx-auto rounded-xl shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-6 text-left px-8">
+                <div class="flex justify-between items-center pb-3">
+                    <p id="modal-title" class="text-2xl font-bold text-[#D35400]"></p>
+                    <div class="modal-close cursor-pointer z-50">
+                         <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                            <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <p id="modal-description" class="text-gray-700 text-base"></p>
+                <img id="modal-image" src="" alt="Imagen de la trayectoria" class="mt-4 rounded-lg hidden">
+            </div>
+        </div>
+    </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const projectData = {
         kpis: {
-            labels: ['Beneficiarios', 'Emprendedores Apoyados', 'Artistas Contratados', 'Casas Culturales Aliadas', 'Talleres Realizados'],
-            data: [6000, 120, 48, 10, 30]
+            labels: ['Emprendedores Apoyados', 'Artistas Contratados', 'Casas Culturales Aliadas', 'Talleres Realizados'],
+            data: [120, 48, 10, 30]
         },
         beneficiaries: {
             labels: ['Juventud', 'Adulto Mayor', 'Mujeres', 'Infancia', 'Población LGBTIQ+'],
@@ -332,7 +597,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     data: [97332000, 39600000, 37662000, 9263538]
                 }
             }
-        }
+        },
+        team: {
+            marketing: ['Director/a de Marketing', 'Diseñador Gráfico (2)', 'Content Creator', 'Community Manager'],
+            production: ['Director/a de Producción', 'Coordinador/a Logístico', 'Asistente de Producción (4)'],
+            admin: ['Director Administrativo', 'Contador', 'Abogado'],
+            innovation: ['Director/a de Innovación', 'Coordinador de Emprendimiento', 'Coordinador de Educación Ambiental']
+        },
+        allies: [
+            { name: 'La Guachafita', logo: 'https://i.postimg.cc/85ZhcLn2/LOGO-Mesa-de-trabajo-1-1.png' },
+            { name: 'Pacífico Bonsai', logo: 'https://i.postimg.cc/tgyPzr00/image.png' },
+            { name: 'Azucena Atelier', logo: 'https://i.postimg.cc/903JCdRc/SOMOS-BARRIO-4.png' },
+            { name: 'Casa Estudio 4C', logo: 'https://i.postimg.cc/59wm8FQF/SOMOS-BARRIO-5.png' },
+            { name: 'Soul Academy', logo: 'https://i.postimg.cc/8zkwpP5f/SOMOS-BARRIO-3.png' },
+            { name: 'JAC (Batán, Recreo, Malibú)', logo: 'https://i.postimg.cc/5t3zKw1X/comisiones-JAC-1.png' },
+            { name: 'Lesiga', logo: 'https://i.postimg.cc/DywbmWrh/SOMOS-BARRIO-6.png' }
+        ]
     };
 
     const colors = {
@@ -365,8 +645,8 @@ document.addEventListener('DOMContentLoaded', function () {
             datasets: [{
                 label: 'Total Esperado',
                 data: projectData.kpis.data,
-                backgroundColor: chartPalette,
-                borderColor: chartPalette.map(color => color + 'B3'),
+                backgroundColor: chartPalette.slice(1),
+                borderColor: chartPalette.slice(1).map(color => color + 'B3'),
                 borderWidth: 1,
                 borderRadius: 5
             }]
@@ -445,6 +725,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateBudgetDetailChart(category) {
         const detailData = projectData.budget.details[category];
         document.getElementById('budgetDetailTitle').innerText = `Detalle: ${category}`;
+        
+        let barColor = colors.secondary;
+        if (category === 'Equipo Humano') {
+            barColor = colors.primary;
+        }
+
         if (budgetDetailChart) budgetDetailChart.destroy();
         budgetDetailChart = new Chart(budgetDetailCtx, {
             type: 'bar',
@@ -453,8 +739,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Costo (COP)',
                     data: detailData.data,
-                    backgroundColor: colors.secondary,
-                    borderColor: colors.primary,
+                    backgroundColor: barColor,
+                    borderColor: barColor.replace(')', ', 0.7)'),
                     borderWidth: 1,
                     borderRadius: 5
                 }]
@@ -472,6 +758,212 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     updateBudgetDetailChart(projectData.budget.main.labels[0]);
+
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const allDescs = document.querySelectorAll('.stat-card-description');
+            const areAnyOpen = Array.from(allDescs).some(desc => desc.classList.contains('open'));
+
+            allDescs.forEach(desc => {
+                if (areAnyOpen) {
+                    desc.classList.remove('open');
+                } else {
+                    desc.classList.add('open');
+                }
+            });
+            
+            document.querySelectorAll('.stat-card').forEach(c => {
+                 if (areAnyOpen) {
+                    c.classList.remove('open');
+                } else {
+                    c.classList.add('open');
+                }
+            });
+        });
+    });
+
+    const modal = document.getElementById('project-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDescription = document.getElementById('modal-description');
+    const modalImage = document.getElementById('modal-image');
+    
+    document.querySelectorAll('.project-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const title = card.dataset.title;
+            const description = card.dataset.description;
+            const image = card.dataset.image;
+            modalTitle.innerText = title;
+            modalDescription.innerText = description;
+            if (image) {
+                modalImage.src = image;
+                modalImage.classList.remove('hidden');
+            } else {
+                modalImage.classList.add('hidden');
+            }
+            modal.classList.remove('hidden');
+        });
+    });
+
+    function closeModal() {
+        modal.classList.add('hidden');
+    }
+
+    modal.querySelector('.modal-overlay').addEventListener('click', closeModal);
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+
+    document.querySelectorAll('.team-card-interactive').forEach(card => {
+        card.addEventListener('click', () => {
+            const team = card.dataset.team;
+            const rolesContainer = document.getElementById(`${team}-roles`);
+            const roles = projectData.team[team];
+
+            if (rolesContainer.classList.contains('open')) {
+                rolesContainer.classList.remove('open');
+                rolesContainer.innerHTML = '';
+            } else {
+                document.querySelectorAll('.team-roles').forEach(rc => {
+                    rc.classList.remove('open');
+                    rc.innerHTML = '';
+                });
+                
+                const ul = document.createElement('ul');
+                ul.className = 'list-disc list-inside text-gray-600';
+                roles.forEach(role => {
+                    const li = document.createElement('li');
+                    li.textContent = role;
+                    ul.appendChild(li);
+                });
+                rolesContainer.appendChild(ul);
+                rolesContainer.classList.add('open');
+            }
+        });
+    });
+
+    const menuBtn = document.getElementById('menu-btn');
+    const closeMenuBtn = document.getElementById('close-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const menuOverlay = document.getElementById('menu-overlay');
+    const navLinks = mobileMenu.querySelectorAll('a');
+
+    function openMenu() {
+        mobileMenu.classList.remove('-translate-x-full');
+        mobileMenu.classList.add('translate-x-0');
+        menuOverlay.classList.remove('hidden');
+    }
+
+    function closeMenu() {
+        mobileMenu.classList.add('-translate-x-full');
+        mobileMenu.classList.remove('translate-x-0');
+        menuOverlay.classList.add('hidden');
+    }
+
+    menuBtn.addEventListener('click', openMenu);
+    closeMenuBtn.addEventListener('click', closeMenu);
+    menuOverlay.addEventListener('click', closeMenu);
+    navLinks.forEach(link => {
+        link.addEventListener('click', closeMenu);
+    });
+    
+    const investmentInput = document.getElementById('investment-amount');
+    const taxRateInput = document.getElementById('tax-rate');
+    const deductionResult = document.getElementById('deduction-result');
+    const savingsResult = document.getElementById('savings-result');
+
+    function updateResultFontSize(element) {
+        element.style.fontSize = ''; 
+        const baseClasses = ['font-bold'];
+        if(element.id === 'deduction-result') {
+            element.className = `text-[#D35400] text-xl ${baseClasses.join(' ')}`;
+        } else {
+            element.className = `text-green-600 text-2xl ${baseClasses.join(' ')}`;
+        }
+
+        let currentSize = element.id === 'deduction-result' ? 20 : 24;
+        while (element.scrollWidth > element.clientWidth && currentSize > 12 && element.clientWidth > 0) {
+            currentSize -= 2;
+            element.style.fontSize = `${currentSize}px`;
+        }
+    }
+
+    function calculateIncentive() {
+        const amount = parseFloat(investmentInput.value) || 0;
+        const taxRate = parseFloat(taxRateInput.value) || 0;
+        const deduction = amount * 1.65;
+        const savings = deduction * (taxRate / 100);
+
+        deductionResult.textContent = formatCurrency(deduction);
+        savingsResult.textContent = formatCurrency(savings);
+        
+        updateResultFontSize(deductionResult);
+        updateResultFontSize(savingsResult);
+    }
+
+    investmentInput.addEventListener('input', calculateIncentive);
+    taxRateInput.addEventListener('input', calculateIncentive);
+    
+    window.addEventListener('resize', calculateIncentive);
+    calculateIncentive();
+
+    const carouselTrack = document.getElementById('carousel-track');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    let currentIndex = 0;
+    
+    const allies = projectData.allies;
+    
+    function createAllyElement(ally) {
+        const div = document.createElement('div');
+        div.className = 'flex-shrink-0 w-1/2 md:w-1/4 lg:w-1/5 p-4';
+        const innerDiv = document.createElement('div');
+        innerDiv.className = 'h-32 bg-white p-4 rounded-lg shadow-md flex items-center justify-center';
+        const img = document.createElement('img');
+        img.src = ally.logo;
+        img.alt = `Logo ${ally.name}`;
+        img.className = 'mx-auto h-24 w-auto object-contain';
+        innerDiv.appendChild(img);
+        div.appendChild(innerDiv);
+        return div;
+    }
+
+    allies.forEach(ally => carouselTrack.appendChild(createAllyElement(ally)));
+    allies.forEach(ally => carouselTrack.appendChild(createAllyElement(ally))); // Duplicate for infinite effect
+
+    function updateCarousel() {
+        const itemWidth = carouselTrack.children[0].offsetWidth;
+        carouselTrack.style.transform = `translateX(-${currentIndex * itemWidth}px)`;
+    }
+
+    nextBtn.addEventListener('click', () => {
+        currentIndex++;
+        carouselTrack.style.transition = 'transform 0.5s ease-in-out';
+        updateCarousel();
+
+        if (currentIndex >= allies.length) {
+            setTimeout(() => {
+                carouselTrack.style.transition = 'none';
+                currentIndex = 0;
+                updateCarousel();
+            }, 500);
+        }
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentIndex === 0) {
+            carouselTrack.style.transition = 'none';
+            currentIndex = allies.length;
+            updateCarousel();
+        }
+        setTimeout(() => {
+            currentIndex--;
+            carouselTrack.style.transition = 'transform 0.5s ease-in-out';
+            updateCarousel();
+        }, 50);
+    });
+
+    setInterval(() => {
+        nextBtn.click();
+    }, 3000);
+
 });
 </script>
 </body>
